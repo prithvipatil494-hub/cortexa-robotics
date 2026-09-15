@@ -1,0 +1,1629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Capivora Robotics — Making Every Production Line Intelligent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,400..800,0..100&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #050505;
+    --ink: #0A0A0A;
+    --ink-2: #141414;
+    --ink-3: #1e1e1e;
+    --paper: #EDE9DE;
+    --paper-2: #E0DCD0;
+    --paper-3: #D2CDBE;
+    --red: #C2352A;
+    --red-dark: #9c211a;
+    --blueprint: #5F7A88;
+    --dust: #837F72;
+    --hairline: rgba(237, 233, 222, 0.14);
+    --hairline-dark: rgba(10, 10, 10, 0.14);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+
+  /* Humanist serif display class */
+  .serif {
+    font-family: 'Fraunces', serif;
+    font-variation-settings: 'opsz' 144, 'SOFT' 60;
+    font-weight: 500;
+  }
+  .serif-bold {
+    font-family: 'Fraunces', serif;
+    font-variation-settings: 'opsz' 144, 'SOFT' 40;
+    font-weight: 700;
+  }
+
+  .container { max-width: 1260px; margin: 0 auto; padding: 0 32px; }
+  @media (max-width: 640px) { .container { padding: 0 20px; } }
+
+  /* ============ VIDEO INTRO OVERLAY ============ */
+  .video-intro {
+    position: fixed; inset: 0; z-index: 9999;
+    background: #000;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+    overflow: hidden;
+    transition: opacity 0.9s cubic-bezier(0.7, 0, 0.3, 1);
+  }
+  .video-intro.exiting {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .video-intro-scene {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .yt-frame-wrap {
+    position: relative;
+    width: min(100vw, calc(100vh * 16 / 9));
+    height: min(100vh, calc(100vw * 9 / 16));
+    aspect-ratio: 16 / 9;
+    background: #000;
+  }
+  .yt-frame-wrap iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+  .intro-sound {
+    position: absolute;
+    top: 20px; right: 130px;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: rgba(237, 233, 222, 0.75);
+    padding: 8px 14px;
+    border: 1px solid rgba(237, 233, 222, 0.25);
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    letter-spacing: 0.06em;
+  }
+  .intro-sound:hover {
+    color: var(--paper);
+    border-color: var(--paper);
+    background: rgba(0, 0, 0, 0.6);
+  }
+  .intro-sound svg { flex-shrink: 0 }
+  @media (max-width: 640px) {
+    .intro-sound { top: 14px; right: 88px; font-size: 10px; padding: 6px 10px; gap: 6px; }
+    .intro-sound span { display: none; }
+  }
+  .intro-vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(180deg, rgba(0,0,0,0.55) 0%, transparent 15%, transparent 85%, rgba(0,0,0,0.65) 100%);
+    z-index: 2;
+  }
+  .intro-corner {
+    position: absolute;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: rgba(237, 233, 222, 0.75);
+    letter-spacing: 0.12em;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .intro-corner.tl { top: 20px; left: 24px; }
+  .intro-corner.bl { bottom: 22px; left: 24px; flex-direction: column; align-items: flex-start; gap: 6px; }
+  .intro-corner.br { bottom: 22px; right: 24px; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .intro-corner .rec-dot {
+    width: 8px; height: 8px;
+    background: var(--red);
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(194,53,42,0.7);
+    animation: rec-blink 1.4s ease-in-out infinite;
+  }
+  @keyframes rec-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .intro-corner .tagline-serif {
+    font-family: 'Fraunces', serif;
+    font-variation-settings: 'opsz' 40, 'SOFT' 90;
+    font-style: italic;
+    font-size: 13px;
+    letter-spacing: 0.01em;
+    color: rgba(237, 233, 222, 0.9);
+    text-transform: none;
+    opacity: 0;
+    animation: fade-in 0.8s ease-out forwards 4s;
+  }
+  @keyframes fade-in { to { opacity: 1; } }
+
+  .intro-skip {
+    position: absolute;
+    top: 20px; right: 24px;
+    z-index: 5;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: rgba(237, 233, 222, 0.75);
+    padding: 8px 14px;
+    border: 1px solid rgba(237, 233, 222, 0.25);
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    letter-spacing: 0.06em;
+  }
+  .intro-skip:hover {
+    color: var(--paper);
+    border-color: var(--paper);
+    background: rgba(194, 53, 42, 0.3);
+  }
+
+  @media (max-width: 640px) {
+    .intro-corner { font-size: 9px; letter-spacing: 0.08em; }
+    .intro-corner.tl { top: 14px; left: 14px; }
+    .intro-corner.bl { bottom: 16px; left: 14px; }
+    .intro-corner.br { bottom: 16px; right: 14px; }
+    .intro-corner .tagline-serif { font-size: 11px; }
+    .intro-skip { top: 14px; right: 14px; font-size: 10px; padding: 6px 10px; }
+  }
+
+  /* ============ NAV ============ */
+  .nav {
+    background: var(--black);
+    color: var(--paper);
+    border-bottom: 1px solid var(--hairline);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .nav-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 0; gap: 24px;
+  }
+  .brand { display: flex; align-items: center; height: 32px; }
+  .brand img { height: 100%; width: auto; display: block; }
+  .nav-links {
+    display: flex; gap: 34px;
+    font-size: 14px;
+    color: rgba(237, 233, 222, 0.68);
+  }
+  .nav-links a { transition: color 0.15s; position: relative; }
+  .nav-links a:hover { color: var(--paper); }
+  .nav-right { display: flex; align-items: center; gap: 16px; }
+  .nav-linkedin {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px;
+    border: 1px solid rgba(237,233,222,0.25);
+    color: rgba(237,233,222,0.68);
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .nav-linkedin:hover { background: var(--paper); color: var(--black); border-color: var(--paper); }
+  .nav-cta {
+    font-size: 13px; font-weight: 500;
+    padding: 10px 18px;
+    border: 1px solid var(--paper);
+    color: var(--paper);
+    transition: background 0.15s, color 0.15s;
+  }
+  .nav-cta:hover { background: var(--paper); color: var(--black); }
+  @media (max-width: 780px) { .nav-links { display: none; } }
+  @media (max-width: 480px) { .nav-cta { display: none; } }
+
+  /* ============ HERO ============ */
+  .hero {
+    background: var(--black);
+    color: var(--paper);
+    padding: 88px 0 116px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-grid-bg {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(var(--hairline) 1px, transparent 1px),
+      linear-gradient(90deg, var(--hairline) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse at 60% 40%, black 20%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse at 60% 40%, black 20%, transparent 75%);
+  }
+  .hero-inner {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 64px;
+    align-items: center;
+  }
+  @media (max-width: 900px) {
+    .hero-inner { grid-template-columns: 1fr; gap: 48px; }
+    .hero { padding: 64px 0 80px; }
+  }
+
+  .hero-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--blueprint);
+    letter-spacing: 0.04em;
+    margin-bottom: 24px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .hero-label::before { content: ''; width: 28px; height: 1px; background: var(--blueprint); }
+
+  .hero-tagline-band {
+    display: inline-flex;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--paper);
+    padding: 7px 14px 7px 12px;
+    border: 1px solid var(--blueprint);
+    letter-spacing: 0.02em;
+    margin-bottom: 26px;
+  }
+  .hero-tagline-band .dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: var(--red);
+    border-radius: 50%;
+    margin-right: 12px;
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+  .hero h1 {
+    font-family: 'Fraunces', serif;
+    font-variation-settings: 'opsz' 144, 'SOFT' 50;
+    font-weight: 500;
+    font-size: clamp(44px, 6.4vw, 88px);
+    line-height: 1.0;
+    letter-spacing: -0.02em;
+    margin-bottom: 28px;
+  }
+  .hero h1 .accent {
+    color: var(--red);
+    font-style: italic;
+    font-variation-settings: 'opsz' 144, 'SOFT' 100;
+    font-weight: 500;
+  }
+  .hero-lede {
+    font-size: 17px;
+    line-height: 1.6;
+    color: rgba(237, 233, 222, 0.72);
+    max-width: 500px;
+    margin-bottom: 40px;
+  }
+  .hero-actions {
+    display: flex; gap: 16px; align-items: center; flex-wrap: wrap;
+  }
+  .btn-primary {
+    background: var(--red);
+    color: var(--paper);
+    padding: 14px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.15s;
+  }
+  .btn-primary:hover { background: var(--red-dark); }
+  .btn-ghost {
+    color: var(--paper);
+    padding: 14px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    border-bottom: 1px solid rgba(237, 233, 222, 0.4);
+    transition: border-color 0.15s;
+  }
+  .btn-ghost:hover { border-bottom-color: var(--paper); }
+
+  /* ============ SCHEMATIC ============ */
+  .schematic {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    max-width: 480px;
+    justify-self: end;
+  }
+  @media (max-width: 900px) {
+    .schematic { justify-self: center; max-width: 380px; }
+  }
+  .schematic svg { width: 100%; height: 100%; }
+  .schematic .corner-mark {
+    position: absolute; width: 14px; height: 14px;
+    border-color: var(--blueprint); border-style: solid; border-width: 0;
+  }
+  .corner-mark.tl { top: 0; left: 0; border-top-width: 1px; border-left-width: 1px; }
+  .corner-mark.tr { top: 0; right: 0; border-top-width: 1px; border-right-width: 1px; }
+  .corner-mark.bl { bottom: 0; left: 0; border-bottom-width: 1px; border-left-width: 1px; }
+  .corner-mark.br { bottom: 0; right: 0; border-bottom-width: 1px; border-right-width: 1px; }
+
+  /* ============ SECTIONS ============ */
+  section { padding: 100px 0; }
+  @media (max-width: 640px) { section { padding: 64px 0; } }
+
+  .section-header {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 48px;
+    margin-bottom: 64px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--hairline-dark);
+  }
+  @media (max-width: 780px) {
+    .section-header { grid-template-columns: 1fr; gap: 16px; margin-bottom: 48px; }
+  }
+  .section-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--blueprint);
+    letter-spacing: 0.02em;
+    padding-top: 8px;
+  }
+  .section-title {
+    font-family: 'Fraunces', serif;
+    font-variation-settings: 'opsz' 144, 'SOFT' 60;
+    font-weight: 500;
+    font-size: clamp(30px, 3.8vw, 50px);
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+    max-width: 740px;
+  }
+  .section-title em {
+    font-style: italic;
+    font-variation-settings: 'opsz' 144, 'SOFT' 100;
+    color: var(--red);
+  }
+
+  /* ============ MISSION ============ */
+  .mission-band {
+    background: var(--paper);
+    padding: 120px 0;
+    position: relative;
+  }
+  @media (max-width: 640px) { .mission-band { padding: 80px 0; } }
+  .mission-inner {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 48px;
+  }
+  @media (max-width: 780px) { .mission-inner { grid-template-columns: 1fr; gap: 32px; } }
+  .mission-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--blueprint);
+    letter-spacing: 0.02em;
+    padding-top: 12px;
+  }
+  .mission-body { max-width: 780px; }
+  .mission-statement {
+    font-family: 'Fraunces', serif;
+    font-variation-settings: 'opsz' 144, 'SOFT' 70;
+    font-weight: 500;
+    font-size: clamp(28px, 3.4vw, 42px);
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    margin-bottom: 40px;
+    color: var(--ink);
+  }
+  .mission-statement em {
+    font-style: italic;
+    font-variation-settings: 'opsz' 144, 'SOFT' 100;
+    color: var(--red);
+  }
+  .mission-para {
+    font-size: 17px;
+    line-height: 1.7;
+    color: var(--ink-2);
+    max-width: 620px;
+    margin-bottom: 18px;
+  }
+  .mission-para:last-child { margin-bottom: 0; }
+  .mission-para strong {
+    font-weight: 500;
+    color: var(--ink);
+    border-bottom: 1px solid var(--red);
+    padding-bottom: 1px;
+  }
+
+  /* ============ CAPABILITIES ============ */
+  .capability {
+    display: grid;
+    grid-template-columns: 90px 1fr 1.2fr;
+    gap: 32px;
+    padding: 34px 0;
+    border-top: 1px solid var(--hairline-dark);
+    align-items: start;
+  }
+  .capability:last-child { border-bottom: 1px solid var(--hairline-dark); }
+  @media (max-width: 780px) {
+    .capability { grid-template-columns: 1fr; gap: 12px; padding: 28px 0; }
+  }
+  .capability-index {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--dust);
+    padding-top: 8px;
+  }
+  .capability-name {
+    font-family: 'Fraunces', serif;
+    font-variation-settings: 'opsz' 60, 'SOFT' 60;
+    font-weight: 500;
+    font-size: 26px;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+  }
+  .capability-body {
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--ink-2);
+  }
+
+  /* ============ APPROACH ============ */
+  .approach-band {
+    background: var(--black);
+    color: var(--paper);
+  }
+  .approach-band .section-tag { color: var(--blueprint); }
+  .approach-band .section-title { color: var(--paper); }
+  .approach-band .section-header { border-bottom-color: var(--hairline); }
+  .approach-grid {
+    display: grid;
+    grid-template-columns: 220px repeat(3, 1fr);
+    gap: 48px;
+  }
+  @media (max-width: 900px) { .approach-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 560px) { .approach-grid { grid-template-columns: 1fr; } }
+  .approach-empty { display: block; }
+  @media (max-width: 900px) { .approach-empty { display: none; } }
+  .approach-item h3 {
+    font-family: 'Fraunces', serif;
+    font-variation-settings: 'opsz' 60, 'SOFT' 60;
+    font-weight: 500;
+    font-size: 22px;
+    margin-bottom: 12px;
+    line-height: 1.2;
+  }
+  .approach-item p {
+    font-size: 14px;
+    line-height: 1.65;
+    color: rgba(237, 233, 222, 0.68);
+  }
+  .approach-item .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--red);
+    display: block;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  /* ============ STATS BAND ============ */
+  .stats-band {
+    padding: 96px 0;
+    background: var(--paper);
+    border-top: 1px solid var(--hairline-dark);
+  }
+  @media (max-width: 640px) { .stats-band { padding: 64px 0; } }
+  .stats-header {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 48px;
+    margin-bottom: 56px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--hairline-dark);
+    align-items: end;
+  }
+  @media (max-width: 780px) {
+    .stats-header { grid-template-columns: 1fr; gap: 12px; margin-bottom: 40px; }
+  }
+  .stats-heading {
+    font-family: 'Fraunces', serif;
+    font-variation-settings: 'opsz' 144, 'SOFT' 60;
+    font-weight: 500;
+    font-size: clamp(26px, 3.2vw, 40px);
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+    max-width: 640px;
+  }
+  .stats-heading em {
+    font-style: italic;
+    font-variation-settings: 'opsz' 144, 'SOFT' 100;
+    color: var(--red);
+  }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+  }
+  .stat-item {
+    padding: 4px 24px;
+    border-left: 1px solid var(--hairline-dark);
+  }
+  .stat-item:first-child { border-left: none; padding-left: 0; }
+  .stat-item:last-child { padding-right: 0; }
+  .stat-number {
+    font-family: 'Fraunces', serif;
+    font-variation-settings: 'opsz' 144, 'SOFT' 40;
+    font-weight: 500;
+    font-size: clamp(48px, 6vw, 76px);
+    line-height: 0.95;
+    color: var(--ink);
+    letter-spacing: -0.03em;
+    margin-bottom: 18px;
+    display: inline-flex;
+    align-items: baseline;
+  }
+  .stat-suffix, .stat-prefix {
+    font-size: 0.42em;
+    color: var(--red);
+    font-style: italic;
+    font-variation-settings: 'opsz' 144, 'SOFT' 100;
+    margin: 0 3px;
+    letter-spacing: 0;
+  }
+  .stat-prefix { margin-right: 4px; }
+  .stat-label {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--ink-2);
+    max-width: 220px;
+  }
+  @media (max-width: 900px) {
+    .stats-grid { grid-template-columns: 1fr 1fr; row-gap: 40px; }
+    .stat-item:nth-child(3) { border-left: none; padding-left: 0; padding-top: 40px; border-top: 1px solid var(--hairline-dark); margin-top: -40px; }
+    .stat-item:nth-child(4) { padding-top: 40px; border-top: 1px solid var(--hairline-dark); margin-top: -40px; }
+  }
+  @media (max-width: 560px) {
+    .stats-grid { grid-template-columns: 1fr; row-gap: 32px; }
+    .stat-item { border-left: none !important; padding-left: 0 !important; padding-top: 32px !important; border-top: 1px solid var(--hairline-dark); margin-top: 0 !important; }
+    .stat-item:first-child { border-top: none; padding-top: 0 !important; }
+  }
+
+  /* ============ TERMINAL TELEMETRY ============ */
+  .telemetry-band {
+    background: var(--paper);
+    padding: 100px 0;
+    border-top: 1px solid var(--hairline-dark);
+  }
+  @media (max-width: 640px) { .telemetry-band { padding: 64px 0; } }
+  .telemetry-header {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 48px;
+    margin-bottom: 48px;
+    align-items: end;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--hairline-dark);
+  }
+  @media (max-width: 780px) { .telemetry-header { grid-template-columns: 1fr; gap: 20px; margin-bottom: 32px; } }
+  .telemetry-header .section-title { font-size: clamp(28px, 3.6vw, 44px); max-width: 620px; }
+  .telemetry-lede {
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--ink-2);
+    max-width: 440px;
+    justify-self: end;
+  }
+  @media (max-width: 780px) { .telemetry-lede { justify-self: start; max-width: 620px; } }
+  .terminal {
+    background: #0a0d13;
+    border: 1px solid #1c212b;
+    color: #a8b2c0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+  }
+  .terminal-chrome {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    background: #14181f;
+    border-bottom: 1px solid #1c212b;
+    gap: 16px;
+  }
+  .terminal-dots { display: flex; gap: 7px; }
+  .terminal-dots span {
+    width: 10px; height: 10px;
+    background: #2a303c;
+    border-radius: 50%;
+  }
+  .terminal-dots span:nth-child(1) { background: #C2352A; }
+  .terminal-dots span:nth-child(2) { background: #d4a017; }
+  .terminal-dots span:nth-child(3) { background: #4a8f4a; }
+  .terminal-title {
+    flex: 1;
+    text-align: center;
+    color: #5F7A88;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+  }
+  .terminal-live {
+    display: flex; align-items: center; gap: 7px;
+    color: #52c94f;
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+  }
+  .terminal-live-dot {
+    width: 7px; height: 7px;
+    background: #52c94f;
+    border-radius: 50%;
+    box-shadow: 0 0 6px rgba(82,201,79,0.6);
+    animation: term-pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes term-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+  .terminal-body {
+    padding: 20px 20px 24px;
+    min-height: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow: hidden;
+  }
+  .terminal-line {
+    display: grid;
+    grid-template-columns: 82px 74px 1fr 20px;
+    gap: 14px;
+    animation: line-in 0.35s cubic-bezier(0.25, 0.8, 0.4, 1);
+    line-height: 1.4;
+  }
+  @keyframes line-in {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .terminal-ts { color: #5F7A88; }
+  .terminal-tag { color: #C2352A; font-weight: 500; }
+  .terminal-msg { color: #d0d5db; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .terminal-flag.ok { color: #52c94f; }
+  .terminal-flag.run { color: #f0b429; }
+  .terminal-cursor-line {
+    display: flex; align-items: center;
+    color: #5F7A88;
+    margin-top: 4px;
+  }
+  .terminal-cursor-line::before { content: '$ '; margin-right: 4px; color: #C2352A; }
+  .terminal-cursor {
+    display: inline-block;
+    width: 8px; height: 14px;
+    background: #a8b2c0;
+    margin-left: 2px;
+    animation: term-blink 1s step-end infinite;
+    vertical-align: middle;
+  }
+  @keyframes term-blink { 50% { opacity: 0; } }
+  @media (max-width: 640px) {
+    .terminal-body { font-size: 10.5px; padding: 14px 12px 18px; min-height: 220px; }
+    .terminal-line { grid-template-columns: 62px 58px 1fr 14px; gap: 8px; }
+    .terminal-chrome { padding: 10px 12px; }
+    .terminal-title { font-size: 10px; }
+  }
+
+  /* ============ FAQ ============ */
+  .faq-band {
+    padding: 100px 0;
+    background: var(--paper);
+    border-top: 1px solid var(--hairline-dark);
+  }
+  @media (max-width: 640px) { .faq-band { padding: 64px 0; } }
+  .faq-list { border-top: 1px solid var(--hairline-dark); }
+  .faq-item {
+    border-bottom: 1px solid var(--hairline-dark);
+  }
+  .faq-q {
+    display: grid;
+    grid-template-columns: 60px 1fr 28px;
+    gap: 24px;
+    align-items: center;
+    padding: 26px 0;
+    cursor: pointer;
+    list-style: none;
+    transition: color 0.15s;
+  }
+  .faq-q::-webkit-details-marker { display: none; }
+  .faq-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--dust);
+    padding-top: 3px;
+  }
+  .faq-q-text {
+    font-family: 'Fraunces', serif;
+    font-variation-settings: 'opsz' 60, 'SOFT' 60;
+    font-weight: 500;
+    font-size: clamp(18px, 2vw, 22px);
+    line-height: 1.3;
+    color: var(--ink);
+    transition: color 0.15s;
+  }
+  .faq-icon {
+    color: var(--dust);
+    display: flex;
+    transition: color 0.15s, transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  }
+  .faq-item:hover .faq-icon { color: var(--red); }
+  .faq-item:hover .faq-q-text { color: var(--red); }
+  .faq-icon-v {
+    transition: opacity 0.2s;
+    transform-origin: center;
+  }
+  details[open] .faq-icon { color: var(--red); transform: rotate(180deg); }
+  details[open] .faq-icon-v { opacity: 0; }
+  .faq-a {
+    padding: 0 28px 30px 84px;
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--ink-2);
+    max-width: 820px;
+    animation: faq-in 0.35s ease-out;
+  }
+  @keyframes faq-in {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @media (max-width: 640px) {
+    .faq-q { grid-template-columns: 42px 1fr 22px; gap: 12px; padding: 22px 0; }
+    .faq-a { padding: 0 22px 24px 54px; font-size: 14px; }
+  }
+
+  /* ============ CONTACT ============ */
+  .contact-band {
+    padding: 120px 0;
+    background: var(--paper-2);
+  }
+  @media (max-width: 640px) { .contact-band { padding: 80px 0; } }
+  .contact-inner {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 64px;
+    align-items: end;
+  }
+  @media (max-width: 780px) {
+    .contact-inner { grid-template-columns: 1fr; gap: 40px; align-items: start; }
+  }
+  .contact-heading {
+    font-family: 'Fraunces', serif;
+    font-variation-settings: 'opsz' 144, 'SOFT' 60;
+    font-weight: 500;
+    font-size: clamp(36px, 4.6vw, 62px);
+    line-height: 1.0;
+    letter-spacing: -0.02em;
+    margin-bottom: 24px;
+  }
+  .contact-heading em {
+    font-style: italic;
+    font-variation-settings: 'opsz' 144, 'SOFT' 100;
+    color: var(--red);
+  }
+  .contact-lede {
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--ink-2);
+    max-width: 500px;
+    margin-bottom: 32px;
+  }
+  .contact-details {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--ink);
+    line-height: 2;
+  }
+  .contact-details .label {
+    color: var(--dust);
+    display: inline-block;
+    width: 92px;
+  }
+  .contact-details a { border-bottom: 1px dotted var(--dust); }
+  .contact-details a:hover { color: var(--red); border-bottom-color: var(--red); }
+  .contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: var(--paper);
+    padding: 32px;
+    border: 1px solid var(--hairline-dark);
+  }
+  .contact-form label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--dust);
+    letter-spacing: 0.02em;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .contact-form input, .contact-form textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--hairline-dark);
+    padding: 8px 0;
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s;
+    font-weight: 500;
+  }
+  .contact-form input:focus, .contact-form textarea:focus { border-bottom-color: var(--red); }
+  .contact-form textarea { resize: vertical; min-height: 68px; }
+  .contact-form button {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 14px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    margin-top: 12px;
+    transition: background 0.15s;
+    align-self: start;
+  }
+  .contact-form button:hover { background: var(--red); }
+  .form-status {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--blueprint);
+    margin-top: 8px;
+    min-height: 18px;
+  }
+
+  /* ============ FOOTER ============ */
+  footer {
+    background: var(--black);
+    color: rgba(237, 233, 222, 0.55);
+    padding: 60px 0 32px;
+    font-size: 13px;
+  }
+  .footer-top {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    gap: 40px;
+    padding-bottom: 40px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  @media (max-width: 780px) { .footer-top { grid-template-columns: 1fr; gap: 32px; } }
+  .footer-brand-block img { height: 28px; margin-bottom: 18px; display: block; }
+  .footer-brand-block p {
+    color: rgba(237,233,222,0.55);
+    max-width: 340px;
+    font-family: 'Fraunces', serif;
+    font-variation-settings: 'opsz' 20, 'SOFT' 80;
+    font-style: italic;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .footer-col h4 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--blueprint);
+    letter-spacing: 0.04em;
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+  .footer-col a {
+    display: block;
+    color: rgba(237,233,222,0.65);
+    padding: 4px 0;
+    transition: color 0.15s;
+  }
+  .footer-col a:hover { color: var(--paper); }
+  .footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    padding-top: 32px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: rgba(237,233,222,0.4);
+    letter-spacing: 0.02em;
+  }
+
+  ::selection { background: var(--red); color: var(--paper); }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const LOGO_LIGHT = 'assets/logo.png';
+    const LOGO_DARK = 'assets/logo-dark.png';
+    const LINKEDIN_URL = 'https://www.linkedin.com/company/capivora-robotics/posts/?feedView=all';
+
+    /* ================================================================ */
+    /*  YOUTUBE INTRO OVERLAY                                           */
+    /* ================================================================ */
+    const YOUTUBE_VIDEO_ID = 'Fh5HVdrcZmo';
+
+    function YouTubeIntro() {
+      const [gone, setGone] = useState(false);
+      const [exiting, setExiting] = useState(false);
+      const [muted, setMuted] = useState(true);
+      const iframeRef = React.useRef(null);
+
+      useEffect(() => {
+        let seen = false;
+        try { seen = sessionStorage.getItem('capivora-intro-yt-seen') === '1'; } catch (e) {}
+        if (seen) setGone(true);
+      }, []);
+
+      // Listen for YouTube iframe postMessage events (video ended)
+      useEffect(() => {
+        const handleMessage = (event) => {
+          const origin = event.origin || '';
+          if (!origin.includes('youtube.com') && !origin.includes('youtube-nocookie.com')) return;
+          try {
+            const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+            if (data && data.event === 'onStateChange' && (data.info === 0 || data.info === 5)) {
+              // 0 = ended, 5 = cued (initial)
+              if (data.info === 0) setExiting(true);
+            }
+          } catch (e) { /* ignore non-JSON messages */ }
+        };
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+      }, []);
+
+      // Once iframe loads, subscribe to state-change events
+      const handleIframeLoad = () => {
+        const iframe = iframeRef.current;
+        if (!iframe || !iframe.contentWindow) return;
+        setTimeout(() => {
+          try {
+            iframe.contentWindow.postMessage(
+              JSON.stringify({ event: 'listening', id: 1 }),
+              '*'
+            );
+            iframe.contentWindow.postMessage(
+              JSON.stringify({ event: 'command', func: 'addEventListener', args: ['onStateChange'] }),
+              '*'
+            );
+          } catch (e) { /* iframe origin unreachable, timer will fall back */ }
+        }, 300);
+      };
+
+      // Fallback timer in case postMessage subscription fails
+      useEffect(() => {
+        if (gone) return;
+        const t = setTimeout(() => setExiting(true), 45000);
+        return () => clearTimeout(t);
+      }, [gone]);
+
+      useEffect(() => {
+        if (!exiting) return;
+        const t = setTimeout(() => {
+          try { sessionStorage.setItem('capivora-intro-yt-seen', '1'); } catch (e) {}
+          setGone(true);
+        }, 900);
+        return () => clearTimeout(t);
+      }, [exiting]);
+
+      const dismiss = () => setExiting(true);
+
+      const toggleMute = () => {
+        const iframe = iframeRef.current;
+        if (!iframe || !iframe.contentWindow) return;
+        try {
+          iframe.contentWindow.postMessage(
+            JSON.stringify({ event: 'command', func: muted ? 'unMute' : 'mute', args: [] }),
+            '*'
+          );
+          setMuted(!muted);
+        } catch (e) {}
+      };
+
+      if (gone) return null;
+
+      const ytUrl =
+        `https://www.youtube-nocookie.com/embed/${YOUTUBE_VIDEO_ID}` +
+        `?autoplay=1&mute=1&controls=0&showinfo=0&rel=0` +
+        `&modestbranding=1&playsinline=1&iv_load_policy=3&fs=0&disablekb=1` +
+        `&cc_load_policy=0&enablejsapi=1`;
+
+      return (
+        <div className={`video-intro ${exiting ? 'exiting' : ''}`} role="dialog" aria-label="Capivora Robotics intro">
+          <div className="intro-corner tl">
+            <span className="rec-dot"></span>REC · CELL CPV-01
+          </div>
+
+          <button className="intro-skip" onClick={dismiss}>Skip intro</button>
+
+          <button className="intro-sound" onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'}>
+            {muted ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+                <line x1="23" y1="9" x2="17" y2="15"/>
+                <line x1="17" y1="9" x2="23" y2="15"/>
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+              </svg>
+            )}
+            <span>{muted ? 'Sound on' : 'Sound off'}</span>
+          </button>
+
+          <div className="video-intro-scene">
+            <div className="yt-frame-wrap">
+              <iframe
+                ref={iframeRef}
+                src={ytUrl}
+                title="Capivora Robotics"
+                frameBorder="0"
+                allow="autoplay; encrypted-media; picture-in-picture"
+                onLoad={handleIframeLoad}
+              ></iframe>
+            </div>
+            <div className="intro-vignette"></div>
+          </div>
+
+          <div className="intro-corner bl">
+            <span>CHENNAI · TAMIL NADU · IN</span>
+            <span className="tagline-serif">Making every production line intelligent.</span>
+          </div>
+
+          <div className="intro-corner br">
+            <span>YOUTUBE · {YOUTUBE_VIDEO_ID}</span>
+            <span className="tagline-serif">Built for the humans on the other side of the safety line.</span>
+          </div>
+        </div>
+      );
+    }
+
+    /* ============ LINKEDIN ICON ============ */
+    function LinkedInIcon({ size = 16 }) {
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+        </svg>
+      );
+    }
+
+    /* ============ NAV ============ */
+    function Nav() {
+      return (
+        <nav className="nav">
+          <div className="container nav-inner">
+            <a href="#top" className="brand" aria-label="Capivora Robotics">
+              <img src={LOGO_LIGHT} alt="Capivora Robotics" />
+            </a>
+            <div className="nav-links">
+              <a href="#mission">Mission</a>
+              <a href="#capabilities">Capabilities</a>
+              <a href="#approach">Approach</a>
+              <a href="#faq">FAQ</a>
+              <a href="#contact">Contact</a>
+            </div>
+            <div className="nav-right">
+              <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer" className="nav-linkedin" aria-label="Capivora Robotics on LinkedIn">
+                <LinkedInIcon />
+              </a>
+              <a href="#contact" className="nav-cta">Talk to engineering</a>
+            </div>
+          </div>
+        </nav>
+      );
+    }
+
+    /* ============ HERO SCHEMATIC ============ */
+    function Schematic() {
+      return (
+        <div className="schematic">
+          <span className="corner-mark tl"></span>
+          <span className="corner-mark tr"></span>
+          <span className="corner-mark bl"></span>
+          <span className="corner-mark br"></span>
+          <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" fill="none">
+            <defs>
+              <pattern id="hgrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(95,122,136,0.15)" strokeWidth="0.5"/>
+              </pattern>
+            </defs>
+            <rect width="400" height="400" fill="url(#hgrid)" />
+
+            <g stroke="#5F7A88" strokeWidth="1">
+              <line x1="80" y1="340" x2="140" y2="340" />
+              <line x1="80" y1="340" x2="80" y2="280" />
+              <polygon points="140,340 134,337 134,343" fill="#5F7A88" />
+              <polygon points="80,280 77,286 83,286" fill="#5F7A88" />
+            </g>
+            <text x="146" y="344" fontFamily="JetBrains Mono" fontSize="10" fill="#5F7A88">X</text>
+            <text x="70" y="274" fontFamily="JetBrains Mono" fontSize="10" fill="#5F7A88">Z</text>
+
+            <rect x="150" y="330" width="100" height="16" fill="#EDE9DE" />
+            <line x1="140" y1="346" x2="260" y2="346" stroke="#EDE9DE" strokeWidth="2" />
+            <line x1="140" y1="352" x2="260" y2="352" stroke="#5F7A88" strokeWidth="0.5" strokeDasharray="2,3" />
+
+            <circle cx="200" cy="330" r="10" fill="#0A0A0A" stroke="#EDE9DE" strokeWidth="1.5" />
+            <circle cx="200" cy="330" r="3" fill="#C2352A" />
+
+            <line x1="200" y1="330" x2="200" y2="230" stroke="#EDE9DE" strokeWidth="8" strokeLinecap="round" />
+            <line x1="200" y1="330" x2="200" y2="230" stroke="#0A0A0A" strokeWidth="4" />
+
+            <circle cx="200" cy="230" r="9" fill="#0A0A0A" stroke="#EDE9DE" strokeWidth="1.5" />
+            <circle cx="200" cy="230" r="2.5" fill="#C2352A" />
+
+            <line x1="200" y1="230" x2="280" y2="150" stroke="#EDE9DE" strokeWidth="7" strokeLinecap="round" />
+            <line x1="200" y1="230" x2="280" y2="150" stroke="#0A0A0A" strokeWidth="3.5" />
+
+            <circle cx="280" cy="150" r="8" fill="#0A0A0A" stroke="#EDE9DE" strokeWidth="1.5" />
+            <circle cx="280" cy="150" r="2.5" fill="#C2352A" />
+
+            <line x1="280" y1="150" x2="330" y2="110" stroke="#EDE9DE" strokeWidth="6" strokeLinecap="round" />
+            <line x1="280" y1="150" x2="330" y2="110" stroke="#0A0A0A" strokeWidth="3" />
+
+            <g stroke="#EDE9DE" strokeWidth="1.5" fill="none">
+              <line x1="330" y1="110" x2="345" y2="95" />
+              <line x1="342" y1="88" x2="352" y2="98" />
+              <line x1="337" y1="103" x2="347" y2="113" />
+            </g>
+
+            <g>
+              <circle cx="345" cy="95" r="18" stroke="#C2352A" strokeWidth="1" strokeDasharray="3,3" fill="none" />
+              <line x1="345" y1="73" x2="345" y2="117" stroke="#C2352A" strokeWidth="0.5" />
+              <line x1="323" y1="95" x2="367" y2="95" stroke="#C2352A" strokeWidth="0.5" />
+            </g>
+
+            <path d="M 200 210 A 20 20 0 0 1 214 216" stroke="#5F7A88" strokeWidth="0.75" fill="none" />
+            <text x="215" y="212" fontFamily="JetBrains Mono" fontSize="9" fill="#5F7A88">θ₂</text>
+
+            <g stroke="#5F7A88" strokeWidth="0.5">
+              <line x1="200" y1="370" x2="345" y2="370" strokeDasharray="2,2" />
+              <line x1="200" y1="365" x2="200" y2="375" />
+              <line x1="345" y1="365" x2="345" y2="375" />
+            </g>
+            <text x="257" y="384" fontFamily="JetBrains Mono" fontSize="9" fill="#5F7A88" textAnchor="middle">reach · 1240mm</text>
+
+            <line x1="352" y1="88" x2="375" y2="65" stroke="#5F7A88" strokeWidth="0.5" />
+            <text x="378" y="63" fontFamily="JetBrains Mono" fontSize="9" fill="#5F7A88">payload 8kg</text>
+
+            <text x="20" y="30" fontFamily="JetBrains Mono" fontSize="9" fill="#5F7A88">SPEC · 6-AXIS · REV 03</text>
+            <text x="20" y="46" fontFamily="JetBrains Mono" fontSize="9" fill="#5F7A88">cycle 0.8s</text>
+            <text x="20" y="60" fontFamily="JetBrains Mono" fontSize="9" fill="#5F7A88">±0.03mm</text>
+          </svg>
+        </div>
+      );
+    }
+
+    /* ============ HERO ============ */
+    function Hero() {
+      return (
+        <section className="hero" id="top">
+          <div className="hero-grid-bg"></div>
+          <div className="container hero-inner">
+            <div>
+              <div className="hero-label">Robotics engineering · Chennai, Tamil Nadu</div>
+              <div className="hero-tagline-band">
+                <span className="dot"></span>Making Every Production Line Intelligent
+              </div>
+              <h1>
+                Robotics for the work<br />
+                that puts people <span className="accent">at risk.</span>
+              </h1>
+              <p className="hero-lede">
+                We build robotic cells and line intelligence for factories in
+                India — starting with the shifts that are dangerous, repetitive,
+                or too precise for a tired human hand.
+              </p>
+              <div className="hero-actions">
+                <a href="#contact" className="btn-primary">Talk to engineering</a>
+                <a href="#mission" className="btn-ghost">Why we build</a>
+              </div>
+            </div>
+            <Schematic />
+          </div>
+        </section>
+      );
+    }
+
+    /* ============ MISSION ============ */
+    function Mission() {
+      return (
+        <section id="mission" className="mission-band">
+          <div className="container mission-inner">
+            <div className="mission-tag">// why we build</div>
+            <div className="mission-body">
+              <h2 className="mission-statement">
+                Making every production line intelligent is <em>what</em> we do.
+                Serving the humans on that line is <em>why</em>.
+              </h2>
+              <p className="mission-para">
+                Every robot we build starts with a person who shouldn't have to
+                do the work. A <strong>welder breathing fumes</strong> on a
+                night shift. An operator making the same wrist motion ten
+                thousand times a day. A technician entering a chamber that
+                reads sixty degrees before the alarm goes off.
+              </p>
+              <p className="mission-para">
+                We build systems that go where humans shouldn't have to — so
+                the people on the floor spend their shift on the work that
+                needs <strong>judgment, care, and a human hand</strong>. The
+                line runs. The operator goes home whole.
+              </p>
+              <p className="mission-para">
+                That is the whole point of the engineering. Everything else —
+                the cycle time, the tolerance, the telemetry — is in service
+                of it.
+              </p>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    /* ============ CAPABILITIES ============ */
+    function Capabilities() {
+      const items = [
+        { idx: 'CAP.01', name: 'Vision-guided pick & place', body: 'Cameras, calibration, and real-time control for parts that arrive unsorted. Cells that see what is in front of them and adapt — no fixture rework when the product changes.' },
+        { idx: 'CAP.02', name: 'Hazardous-environment cells', body: 'Robotic handling for chemical exposure, high temperature, and cutting/welding work that shouldn\'t sit in a human\'s shift plan. Sealed enclosures, safety-rated stops, remote supervision.' },
+        { idx: 'CAP.03', name: 'Line intelligence & telemetry', body: 'Every cell reports what it is doing. OEE, cycle drift, and anomaly signals stream to a plant dashboard so the line tells your team where the next hour of downtime will come from.' },
+        { idx: 'CAP.04', name: 'Retrofit & modernization', body: 'We add vision, sensing, and network intelligence to arms and lines you already own. Most existing hardware has years of production left in it once it can talk to the rest of the plant.' }
+      ];
+      return (
+        <section id="capabilities">
+          <div className="container">
+            <div className="section-header">
+              <div className="section-tag">// what we build</div>
+              <h2 className="section-title">
+                Robotic cells engineered around <em>one thing</em>: the part that has to leave the line.
+              </h2>
+            </div>
+            <div>
+              {items.map((c) => (
+                <div className="capability" key={c.idx}>
+                  <div className="capability-index">{c.idx}</div>
+                  <div className="capability-name">{c.name}</div>
+                  <div className="capability-body">{c.body}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    /* ============ APPROACH ============ */
+    function Approach() {
+      return (
+        <section id="approach" className="approach-band">
+          <div className="container">
+            <div className="section-header">
+              <div className="section-tag">// how we work</div>
+              <h2 className="section-title">Engineering discipline, not a demo.</h2>
+            </div>
+            <div className="approach-grid">
+              <div className="approach-empty"></div>
+              <div className="approach-item">
+                <span className="num">→ site</span>
+                <h3>We start on your floor</h3>
+                <p>Every project begins with a walk of your line. Cycle times, part variance, operator movement, and where the dangerous or dull work actually lives.</p>
+              </div>
+              <div className="approach-item">
+                <span className="num">→ build</span>
+                <h3>Small teams, tight loops</h3>
+                <p>Two-to-three engineers per cell, weekly hardware iterations, and firmware that ships to the shop floor as fast as it ships to the bench.</p>
+              </div>
+              <div className="approach-item">
+                <span className="num">→ handover</span>
+                <h3>Your team runs it</h3>
+                <p>Documentation, training, and a debug playbook so your maintenance team is the first responder — not us on a red-eye flight.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    /* ============ STATS BAND ============ */
+    function Stats() {
+      const stats = [
+        { number: '2,400', suffix: '+', label: 'Hours of dangerous work removed per cell, per year of operation.' },
+        { prefix: '±', number: '0.03', suffix: 'mm', label: 'Typical placement tolerance, cycle after cycle, shift after shift.' },
+        { prefix: '<', number: '24', suffix: 'h', label: 'Response time on any active cell — remote first, on-site when it matters.' },
+        { number: '0', label: 'Lost-time injuries in cells we\'ve commissioned and support.' }
+      ];
+      return (
+        <section className="stats-band" id="numbers">
+          <div className="container">
+            <div className="stats-header">
+              <div className="section-tag">// mission, quantified</div>
+              <h2 className="stats-heading">
+                Numbers we mean, not <em>numbers we wish for.</em>
+              </h2>
+            </div>
+            <div className="stats-grid">
+              {stats.map((s, i) => (
+                <div className="stat-item" key={i}>
+                  <div className="stat-number">
+                    {s.prefix && <span className="stat-prefix">{s.prefix}</span>}
+                    {s.number}
+                    {s.suffix && <span className="stat-suffix">{s.suffix}</span>}
+                  </div>
+                  <div className="stat-label">{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    /* ============ TERMINAL TELEMETRY ============ */
+    function Telemetry() {
+      const [lines, setLines] = useState([]);
+
+      useEffect(() => {
+        const templates = [
+          { tag: 'RUN', msg: 'cell-01.status=RUNNING  cycle=0.82s  ±0.03mm', flag: '✓' },
+          { tag: 'VIS', msg: 'vision.calibration=auto  drift=0.001', flag: '✓' },
+          { tag: 'PIC', msg: 'part.detected #48291  gripper.close', flag: '✓' },
+          { tag: 'PLC', msg: 'place.confirmed station=B  next.cycle', flag: '↻' },
+          { tag: 'SYS', msg: 'temp=42°C  power=1.2kW  uptime=847h', flag: '' },
+          { tag: 'RUN', msg: 'cell-02.status=RUNNING  cycle=1.14s', flag: '✓' },
+          { tag: 'OEE', msg: 'oee=94.2%  avail=98.1%  quality=99.8%', flag: '' },
+          { tag: 'ALT', msg: 'no anomalies detected  continuing', flag: '✓' },
+          { tag: 'PIC', msg: 'part.detected #48292  gripper.close', flag: '✓' },
+          { tag: 'ENV', msg: 'chamber sealed  O₂=20.9%  humidity=42%', flag: '✓' }
+        ];
+
+        const stamp = (offset) => {
+          const now = new Date(Date.now() - offset * 1000);
+          return String(now.getHours()).padStart(2,'0') + ':' +
+                 String(now.getMinutes()).padStart(2,'0') + ':' +
+                 String(now.getSeconds()).padStart(2,'0');
+        };
+        let counter = 0;
+        const genLine = (offset = 0) => {
+          const template = templates[counter++ % templates.length];
+          return { ts: stamp(offset), ...template, id: counter + '_' + Math.random().toString(36).slice(2, 8) };
+        };
+
+        setLines(Array.from({ length: 6 }, (_, i) => genLine((5 - i) * 2)));
+
+        const interval = setInterval(() => {
+          setLines(prev => [...prev.slice(-5), genLine(0)]);
+        }, 1800);
+
+        return () => clearInterval(interval);
+      }, []);
+
+      return (
+        <section className="telemetry-band">
+          <div className="container">
+            <div className="telemetry-header">
+              <div>
+                <div className="section-tag">// live from a cell</div>
+                <h2 className="section-title">
+                  Every cell reports what it is <em>doing.</em>
+                </h2>
+              </div>
+              <p className="telemetry-lede">
+                Line intelligence isn't a dashboard we sell as an add-on — it
+                ships with every cell we build. This is what the stream looks
+                like from a healthy cell: cycle time, drift, place
+                confirmations, OEE.
+              </p>
+            </div>
+            <div className="terminal">
+              <div className="terminal-chrome">
+                <div className="terminal-dots"><span></span><span></span><span></span></div>
+                <div className="terminal-title">capivora · cell-01.stream</div>
+                <div className="terminal-live">
+                  <span className="terminal-live-dot"></span>LIVE
+                </div>
+              </div>
+              <div className="terminal-body">
+                {lines.map(line => (
+                  <div className="terminal-line" key={line.id}>
+                    <span className="terminal-ts">[{line.ts}]</span>
+                    <span className="terminal-tag">{line.tag}</span>
+                    <span className="terminal-msg">{line.msg}</span>
+                    <span className={`terminal-flag ${line.flag === '✓' ? 'ok' : line.flag === '↻' ? 'run' : ''}`}>{line.flag}</span>
+                  </div>
+                ))}
+                <div className="terminal-cursor-line">
+                  tail -f<span className="terminal-cursor"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    /* ============ FAQ ============ */
+    function FAQ() {
+      const items = [
+        {
+          q: 'How long from first conversation to a working cell?',
+          a: 'For a standard pick-and-place or vision-guided cell: eight to twelve weeks from spec to installation on your floor. Hazardous-environment cells with custom enclosures run longer — typically fourteen to twenty weeks. We share a firm timeline after a site walk, not before.'
+        },
+        {
+          q: 'Do you work with our existing robots and PLCs?',
+          a: 'Yes. Most of what we do is integration, not net-new hardware. We\'ve added vision, sensing, safety scanners, and telemetry to arms from KUKA, ABB, Fanuc, and Universal Robots, and we speak PLC languages common on the Indian shop floor. Retrofit is often the fastest path to a smarter line.'
+        },
+        {
+          q: 'What industries have you deployed in?',
+          a: 'Automotive tier-2, food packaging, and light chemical handling to date. We\'re deliberate about scope — we don\'t take on domains where we can\'t stand behind the safety analysis. If your work sits outside these, tell us on the call; we\'ll say honestly whether it\'s a fit.'
+        },
+        {
+          q: 'How is pricing structured?',
+          a: 'Fixed price per cell, quoted after the site walk. Covers hardware, integration, on-site commissioning, documentation, and thirty days of hypercare after go-live. Ongoing support and telemetry hosting are separate, month-to-month, priced per cell, cancellable.'
+        },
+        {
+          q: 'What kind of ongoing support is included?',
+          a: 'Every cell we deploy ships with a debug playbook written for your maintenance team so they\'re the first responders. We back that up with remote supervision, sub-24-hour response on any active-cell issue, and quarterly on-site health checks for cells under active support.'
+        },
+        {
+          q: 'Do you handle safety compliance and audits?',
+          a: 'Yes — safety-rated stops, light curtains, area scanners, risk assessments, and the paperwork trail your compliance team needs. For hazardous-environment cells we work with your EHS lead from the first drawing, not the final walk-through.'
+        }
+      ];
+      return (
+        <section id="faq" className="faq-band">
+          <div className="container">
+            <div className="section-header">
+              <div className="section-tag">// answers before you ask</div>
+              <h2 className="section-title">
+                The questions engineering managers ask <em>before</em> the call.
+              </h2>
+            </div>
+            <div className="faq-list">
+              {items.map((item, i) => (
+                <details className="faq-item" key={i}>
+                  <summary className="faq-q">
+                    <span className="faq-num">{String(i+1).padStart(2, '0')}</span>
+                    <span className="faq-q-text">{item.q}</span>
+                    <span className="faq-icon" aria-hidden="true">
+                      <svg width="14" height="14" viewBox="0 0 14 14">
+                        <line x1="1" y1="7" x2="13" y2="7" stroke="currentColor" strokeWidth="1.5"/>
+                        <line x1="7" y1="1" x2="7" y2="13" stroke="currentColor" strokeWidth="1.5" className="faq-icon-v"/>
+                      </svg>
+                    </span>
+                  </summary>
+                  <div className="faq-a">{item.a}</div>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    /* ============ CONTACT ============ */
+    function Contact() {
+      const [status, setStatus] = useState('');
+      const [form, setForm] = useState({ name: '', company: '', email: '', message: '' });
+      const update = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+      const submit = () => {
+        if (!form.name || !form.email || !form.message) {
+          setStatus('// missing required fields');
+          return;
+        }
+        setStatus('// message queued — we reply within one business day');
+        setForm({ name: '', company: '', email: '', message: '' });
+      };
+      return (
+        <section id="contact" className="contact-band">
+          <div className="container contact-inner">
+            <div>
+              <h2 className="contact-heading">
+                Have a line<br />that <em>needs to think?</em>
+              </h2>
+              <p className="contact-lede">
+                Tell us about the part, the cycle time, and where the shift is
+                dangerous or dull. We reply with an engineering point of view,
+                not a sales deck.
+              </p>
+              <div className="contact-details">
+                <div><span className="label">location</span> Chennai, Tamil Nadu</div>
+                <div><span className="label">discipline</span> Robotics engineering</div>
+                <div><span className="label">team</span> 2–10 engineers</div>
+                <div><span className="label">linkedin</span> <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer">capivora-robotics</a></div>
+              </div>
+            </div>
+            <div className="contact-form">
+              <div>
+                <label>name</label>
+                <input type="text" value={form.name} onChange={update('name')} placeholder="Priya Ramanathan" />
+              </div>
+              <div>
+                <label>company</label>
+                <input type="text" value={form.company} onChange={update('company')} placeholder="Acme Manufacturing" />
+              </div>
+              <div>
+                <label>email</label>
+                <input type="email" value={form.email} onChange={update('email')} placeholder="priya@acme.co" />
+              </div>
+              <div>
+                <label>tell us about the line</label>
+                <textarea value={form.message} onChange={update('message')} placeholder="Automotive stamping cell, 42s cycle, operator handling hot parts at station 3..." />
+              </div>
+              <button onClick={submit}>Send message</button>
+              <div className="form-status">{status}</div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    /* ============ FOOTER ============ */
+    function Footer() {
+      return (
+        <footer>
+          <div className="container">
+            <div className="footer-top">
+              <div className="footer-brand-block">
+                <img src={LOGO_LIGHT} alt="Capivora Robotics" />
+                <p>Robotic cells and line intelligence for factories that want to think — built for the humans on the other side of the safety line.</p>
+              </div>
+              <div className="footer-col">
+                <h4>// site</h4>
+                <a href="#mission">Mission</a>
+                <a href="#capabilities">Capabilities</a>
+                <a href="#approach">Approach</a>
+                <a href="#faq">FAQ</a>
+                <a href="#contact">Contact</a>
+              </div>
+              <div className="footer-col">
+                <h4>// elsewhere</h4>
+                <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer">LinkedIn</a>
+                <a href="mailto:hello@capivora.io">hello@capivora.io</a>
+              </div>
+            </div>
+            <div className="footer-bottom">
+              <div>© 2026 Capivora Robotics Pvt Ltd</div>
+              <div>Chennai · Tamil Nadu · IN</div>
+            </div>
+          </div>
+        </footer>
+      );
+    }
+
+    /* ============ APP ============ */
+    function App() {
+      return (
+        <>
+          <YouTubeIntro />
+          <Nav />
+          <Hero />
+          <Mission />
+          <Stats />
+          <Capabilities />
+          <Telemetry />
+          <Approach />
+          <FAQ />
+          <Contact />
+          <Footer />
+        </>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
